@@ -26,4 +26,17 @@
 
 ## Dev
 
-Everything lives in `index.html` (~1500 lines): terrain, resources, building/snapping/collision, controls, day-night, game loop. Three.js r128 from cdnjs.
+No build step — `index.html` loads Three.js r128 from cdnjs, then the game modules from `js/` in order. They're plain (non-module) scripts that share one global scope, so opening `index.html` over `file://` still works.
+
+- `styles.css` — all UI/HUD styling
+- `js/scene.js` — renderer, camera, lights, stars
+- `js/noise.js` — value noise + `terrainHeight`
+- `js/terrain.js` — terrain mesh & water
+- `js/resources.js` — trees, rocks, clouds (instanced)
+- `js/character.js` — player character model
+- `js/player.js` — player state, spawn, inventory
+- `js/building.js` — recipes, builders, snapping/placement
+- `js/gather.js` — gathering, hits, respawns
+- `js/controls.js` — touch + keyboard/mouse input, camera view
+- `js/daynight.js` — day/night cycle
+- `js/main.js` — physics/collision, camera, game loop
