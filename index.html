@@ -33,6 +33,11 @@
   <div class="recipe" data-item="door"><span><span class="key">7</span>🚪 Дверь</span><span class="cost">4🪵</span></div>
   <div class="recipe" data-item="campfire"><span><span class="key">8</span>🔥 Костёр</span><span class="cost">3🪵 2🪨</span></div>
 </div>
+<div id="inventory" class="panel">
+  <h3>РЮКЗАК</h3>
+  <div id="invGrid"></div>
+  <div id="invHint">Перетаскивай предметы · ПКМ / долгое нажатие — разделить стопку</div>
+</div>
 <div id="placeControls">
   <button id="placeOk">✓</button>
   <button id="placeCancel">✕</button>
@@ -40,6 +45,7 @@
 <div id="hint"></div>
 <div id="joystick"><div id="stick"></div></div>
 <button id="actionBtn" class="roundBtn">🪓</button>
+<button id="invBtn" class="roundBtn">🎒</button>
 <button id="craftBtn" class="roundBtn">🔨</button>
 <button id="jumpBtn" class="roundBtn">JUMP</button>
 
@@ -51,6 +57,7 @@
 <script src="js/resources.js"></script>
 <script src="js/character.js"></script>
 <script src="js/player.js"></script>
+<script src="js/inventory.js"></script>
 <script src="js/building.js"></script>
 <script src="js/gather.js"></script>
 <script src="js/controls.js"></script>

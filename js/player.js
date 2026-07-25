@@ -24,14 +24,4 @@ const player = {
 const GRAV = 26, JUMP = 9.5, CAM_DIST = 5.5, EYE = 1.6;
 let firstPerson = true;
 let swingT = 0;
-
-// ============ ИНВЕНТАРЬ ============
-const inv = { wood: 500, stone: 500 };
-const woodCnt = document.getElementById('woodCnt');
-const stoneCnt = document.getElementById('stoneCnt');
-function updateInv() {
-  woodCnt.textContent = inv.wood;
-  stoneCnt.textContent = inv.stone;
-  refreshRecipes();
-}
-setTimeout(updateInv, 0); // показать стартовые ресурсы сразу
+// Инвентарь вынесен в js/inventory.js (слоты + стаки)
