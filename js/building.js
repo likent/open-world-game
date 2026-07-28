@@ -223,7 +223,8 @@ const WALL_SEGS = {
 const WALL_PUSH = { woodwall: 0.6, stonewall: 0.6, window: 0.6, door: 0.4 };
 
 function canAfford(cost) {
-  return (!cost.wood || inv.wood >= cost.wood) && (!cost.stone || inv.stone >= cost.stone);
+  for (const k in cost) if (countItem(k) < cost[k]) return false;
+  return true;
 }
 function refreshRecipes() {
   document.querySelectorAll('.recipe').forEach(el => {
@@ -369,6 +370,7 @@ function startPlacing(type) {
   placing = { type, ghost };
   placeControls.classList.add('visible');
   craftPanel.classList.remove('open');
+  invPanel.classList.remove('open');
 }
 function cancelPlacing() {
   if (placing) {
@@ -393,8 +395,7 @@ function confirmPlacing() {
   if (!placementValid(placing.type, p)) return;
   const rec = RECIPES[placing.type];
   if (!canAfford(rec.cost)) { cancelPlacing(); return; }
-  inv.wood -= rec.cost.wood || 0;
-  inv.stone -= rec.cost.stone || 0;
+  for (const k in rec.cost) removeItem(k, rec.cost[k]);
 
   const mesh = BUILDERS[placing.type]();
   mesh.position.set(p.x, p.y, p.z);
@@ -423,7 +424,10 @@ function toggleCraftPanel() {
   refreshRecipes();
   const opening = !craftPanel.classList.contains('open');
   craftPanel.classList.toggle('open');
-  if (opening) document.exitPointerLock?.(); // вернуть курсор для выбора
+  if (opening) {
+    invPanel.classList.remove('open');
+    document.exitPointerLock?.(); // вернуть курсор для выбора
+  }
 }
 document.getElementById('craftBtn').addEventListener('click', toggleCraftPanel);
 placeOk.addEventListener('click', confirmPlacing);

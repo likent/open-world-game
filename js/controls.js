@@ -111,8 +111,9 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyE') hitTarget();
   if (e.code === 'KeyV') setView(!firstPerson);
   if (e.code === 'KeyC') toggleCraftPanel();
+  if (e.code === 'KeyI') toggleInventory();
   if (e.code === 'Enter' && placing) confirmPlacing();
-  if (e.code === 'Escape') { cancelPlacing(); craftPanel.classList.remove('open'); }
+  if (e.code === 'Escape') { cancelPlacing(); craftPanel.classList.remove('open'); invPanel.classList.remove('open'); }
   // хоткеи рецептов 1-8 — работают даже при захваченной мыши
   if (e.code.startsWith('Digit')) {
     const n = parseInt(e.code.slice(5)) - 1;

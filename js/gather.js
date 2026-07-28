@@ -31,11 +31,12 @@ function hitTarget() {
       o.alive = false;
       o.respawnAt = performance.now() + RESPAWN_MS;
       hideTree(o);
-      inv.wood += 3;
+      addItem('wood', 3);
+      if (Math.random() < 0.25) addItem('apple', 1); // изредка падает яблоко
     } else {
       setTreeMatrices(o, 1.08);
       setTimeout(() => { if (o.alive) { setTreeMatrices(o); treesNeedUpdate(); } }, 120);
-      inv.wood += 1;
+      addItem('wood', 1);
     }
     treesNeedUpdate();
   } else if (target.kind === 'rock') {
@@ -43,15 +44,16 @@ function hitTarget() {
       o.alive = false;
       o.respawnAt = performance.now() + RESPAWN_MS;
       rocksMesh.setMatrixAt(o.idx, ZERO_M);
-      inv.stone += 2;
+      addItem('stone', 2);
+      if (Math.random() < 0.2) addItem('coal', 1); // изредка падает уголь
     } else {
       setRockMatrix(o, 1.08);
       setTimeout(() => { if (o.alive) { setRockMatrix(o); rocksMesh.instanceMatrix.needsUpdate = true; } }, 120);
-      inv.stone += 1;
+      addItem('stone', 1);
     }
     rocksMesh.instanceMatrix.needsUpdate = true;
   }
-  updateInv();
+  // addItem уже вызвал updateInv()
 }
 
 function processRespawns(now) {
