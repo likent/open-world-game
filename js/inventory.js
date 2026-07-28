@@ -25,7 +25,7 @@ function itemUses(id) {
 }
 
 // Загружаем таблицу предметов из JSON и строим карту id → запись
-fetch('data/items.json?v=5')
+fetch('data/items.json?v=6')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => {
     const map = {};
@@ -136,11 +136,19 @@ function showTip(idx, x, y) {
   if (!s) return;
   const it = itemDef(s.id);
   const uses = itemUses(s.id);
+  // не вываливаем весь список (их могут быть сотни) — пара примеров + счётчик
+  const MAX_USES = 3;
+  let useLine = '';
+  if (uses.length) {
+    let label = uses.slice(0, MAX_USES).join(', ');
+    if (uses.length > MAX_USES) label += ` +${uses.length - MAX_USES}`;
+    useLine = `<div class="tipUse">🔨 Крафт (${uses.length}): ${label}</div>`;
+  }
   tip = document.createElement('div');
   tip.className = 'invTip';
   tip.innerHTML = `<div class="tipName">${it.icon} ${it.name}</div>` +
                   (it.desc ? `<div class="tipDesc">${it.desc}</div>` : '') +
-                  (uses.length ? `<div class="tipUse">🔨 Крафт: ${uses.join(', ')}</div>` : '');
+                  useLine;
   document.body.appendChild(tip);
   // разместить над пальцем/курсором, не вылезая за края экрана
   const r = tip.getBoundingClientRect();
