@@ -4,6 +4,23 @@
 
 **Play:** open `index.html` in a browser, or enable GitHub Pages (Settings → Pages → branch `main`, folder `/`) and play at `https://<user>.github.io/open-world-game/`.
 
+## Vision
+
+The goal is a **survival game**: gather → craft → build → stay alive. The player fights hunger, night, and danger, and turns the world into shelter and tools. The systems below are being added toward that loop.
+
+## Roadmap
+
+Rough order, most foundational first:
+
+1. **Survival stats** — health + hunger (later thirst/stamina). Hunger drains over time; eating restores it, starving hurts. Makes `type: "food"` items (apples) actually edible. *(core survival loop)*
+2. **Persistence** — save inventory, buildings and player state to `localStorage`; reload continues the world.
+3. **Crafting screen & tools** — recipe UI filtered by ingredient (reuses `itemUses(id)`), craftable tools (axe/pickaxe speed up gathering), a workbench to unlock recipes.
+4. **World item drops** — items lying on the ground as `{ id, count, x, z }` entities; walk over to pick up (`addItem`). Felled trees/rocks drop pickups instead of auto-adding.
+5. **Mobs** — passive animals to hunt for food, hostile creatures at night → a reason to wall yourself in. Then combat + weapons.
+6. **Environment pressure** — cold nights, campfire warmth; building durability + a hammer to repair/remove.
+
+Data-driven where possible: items live in `data/items.json`; recipes and drop tables can move into JSON next so content is editable without touching code.
+
 ## Features
 
 - Procedural terrain (value noise), water with waves, day/night cycle with sun/moon/stars

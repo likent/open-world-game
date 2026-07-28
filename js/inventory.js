@@ -25,7 +25,7 @@ function itemUses(id) {
 }
 
 // Загружаем таблицу предметов из JSON и строим карту id → запись
-fetch('data/items.json?v=6')
+fetch('data/items.json?v=7')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => {
     const map = {};
@@ -218,9 +218,22 @@ addEventListener('pointerup', e => {
     endDragCleanup();
     updateInv();
   } else {
-    drag = null; // просто тап — ничего
+    const fromIdx = drag.from;
+    drag = null;
+    eatFromSlot(fromIdx); // быстрый тап по еде — съесть
   }
 });
+
+// съесть 1 шт. еды из слота: восстановить здоровье игрока
+function eatFromSlot(idx) {
+  const s = inv.slots[idx];
+  if (!s) return;
+  const it = itemDef(s.id);
+  if (it.type !== 'food' || !it.heal) return;
+  if (typeof player === 'undefined' || player.hp >= player.maxHp) return; // не тратим впустую
+  removeItem(s.id, 1);
+  player.hp = Math.min(player.maxHp, player.hp + it.heal);
+}
 
 // ============ ОТКРЫТИЕ / ЗАКРЫТИЕ ============
 function toggleInventory() {
