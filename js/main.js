@@ -232,11 +232,18 @@ function animate() {
     }
   }
 
-  // цель
-  target = findTarget();
-  if (target && !placing) {
+  // мобы
+  if (typeof updateMobs === 'function') updateMobs(dt);
+
+  // цель — моб в зоне удара приоритетнее ресурса
+  const mobT = (typeof aimMob === 'function') ? aimMob() : null;
+  target = mobT ? null : findTarget();
+  if ((mobT || target) && !placing) {
     actionBtn.classList.add('visible');
-    if (target.kind === 'tree') {
+    if (mobT) {
+      actionBtn.textContent = mobT.def.hostile ? '⚔️' : '🥩';
+      hint.textContent = `${mobT.def.name} (${Math.ceil(mobT.hp)}/${mobT.def.hp})`;
+    } else if (target.kind === 'tree') {
       actionBtn.textContent = '🪓';
       hint.textContent = `Рубить дерево (${target.obj.hp}/3)`;
     } else {

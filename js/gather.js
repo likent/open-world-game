@@ -21,6 +21,8 @@ function findTarget() {
 }
 
 function hitTarget() {
+  // сначала бьём моба, если он в зоне удара
+  if (typeof hitAimedMob === 'function' && hitAimedMob()) return;
   if (!target) return;
   const o = target.obj;
   o.hp--;

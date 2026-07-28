@@ -64,6 +64,32 @@ canvas { display: block; }
   font-size: 30px;
 }
 
+#hpHud {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  z-index: 10;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+#hpBar {
+  width: 120px;
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.3);
+  overflow: hidden;
+}
+#hpFill {
+  width: 100%;
+  height: 100%;
+  background: #5fd06a;
+  transition: width 0.15s linear, background 0.3s;
+}
 #clockHud {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 12px);

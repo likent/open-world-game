@@ -20,6 +20,8 @@ const player = {
   speed: 8,
   walkPhase: 0,
   moving: 0,
+  hp: 100,
+  maxHp: 100,
 };
 const GRAV = 26, JUMP = 9.5, CAM_DIST = 5.5, EYE = 1.6;
 let firstPerson = true;
