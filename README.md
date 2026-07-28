@@ -8,7 +8,8 @@
 
 - Procedural terrain (value noise), water with waves, day/night cycle with sun/moon/stars
 - Resource gathering: chop trees (wood, sometimes apples), mine rocks (stone, sometimes coal), respawn timers
-- Slot-based inventory (backpack): 24 slots, stacking, drag & drop and stack-splitting that work with mouse and touch (open with 🎒 / `I`)
+- Slot-based inventory (backpack): 24 slots, stacking, drag & drop to arrange (mouse + touch); hold an item to see its name & description (open with 🎒 / `I`)
+- Item database in `data/items.json` — a table of records keyed by `id` (name, icon, type, stack size, description); loaded at startup and referenced everywhere by `id`
 - Building system with grid snapping (Rust-style):
   - Foundation (raised, half wall height), floor slabs, stairs (indoor + outdoor), wood/stone walls, window, door with auto-opening leaf, campfire
   - Wall-on-wall stacking, multi-storey support, snap prefers the storey at the player's feet level
@@ -36,7 +37,8 @@ No build step — `index.html` loads Three.js r128 from cdnjs, then the game mod
 - `js/resources.js` — trees, rocks, clouds (instanced)
 - `js/character.js` — player character model
 - `js/player.js` — player state, spawn
-- `js/inventory.js` — item registry, slot inventory, stacking, drag & drop UI
+- `js/inventory.js` — loads the item DB, slot inventory, stacking, drag & drop + hold-to-inspect UI
+- `data/items.json` — item table (id, name, icon, type, stack, desc)
 - `js/building.js` — recipes, builders, snapping/placement
 - `js/gather.js` — gathering, hits, respawns
 - `js/controls.js` — touch + keyboard/mouse input, camera view
