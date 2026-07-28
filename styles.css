@@ -251,6 +251,14 @@ canvas { display: block; }
 }
 .invTip .tipName { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
 .invTip .tipDesc { font-size: 11px; line-height: 1.4; opacity: 0.75; }
+.invTip .tipUse {
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  opacity: 0.85;
+}
 
 #placeControls {
   position: fixed;

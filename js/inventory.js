@@ -12,9 +12,20 @@ let ITEMS = {
 };
 const itemDef = id => ITEMS[id] || { id, name: id, icon: '❓', type: 'misc', stack: 99, desc: '' };
 const itemMax = id => itemDef(id).stack ?? 99;
+// где применяется предмет — выводим из рецептов (RECIPES в building.js), а не из текста.
+// добавишь рецепт со стоимостью в этот id — он появится тут сам, описание трогать не нужно.
+function itemUses(id) {
+  if (typeof RECIPES !== 'object') return [];
+  const out = [];
+  for (const k in RECIPES) {
+    const cost = RECIPES[k].cost;
+    if (cost && cost[id]) out.push(RECIPES[k].name);
+  }
+  return out;
+}
 
 // Загружаем таблицу предметов из JSON и строим карту id → запись
-fetch('data/items.json?v=4')
+fetch('data/items.json?v=5')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => {
     const map = {};
@@ -124,10 +135,12 @@ function showTip(idx, x, y) {
   const s = inv.slots[idx];
   if (!s) return;
   const it = itemDef(s.id);
+  const uses = itemUses(s.id);
   tip = document.createElement('div');
   tip.className = 'invTip';
   tip.innerHTML = `<div class="tipName">${it.icon} ${it.name}</div>` +
-                  (it.desc ? `<div class="tipDesc">${it.desc}</div>` : '');
+                  (it.desc ? `<div class="tipDesc">${it.desc}</div>` : '') +
+                  (uses.length ? `<div class="tipUse">🔨 Крафт: ${uses.join(', ')}</div>` : '');
   document.body.appendChild(tip);
   // разместить над пальцем/курсором, не вылезая за края экрана
   const r = tip.getBoundingClientRect();
