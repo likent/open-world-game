@@ -114,12 +114,16 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyI') toggleInventory();
   if (e.code === 'Enter' && placing) confirmPlacing();
   if (e.code === 'Escape') { cancelPlacing(); craftPanel.classList.remove('open'); invPanel.classList.remove('open'); }
-  // хоткеи рецептов 1-8 — работают даже при захваченной мыши
+  // цифры: при открытом крафте — выбор рецепта, иначе — слот пояса
   if (e.code.startsWith('Digit')) {
     const n = parseInt(e.code.slice(5)) - 1;
-    if (n >= 0 && n < HOTKEYS.length) {
-      const type = HOTKEYS[n];
-      if (canAfford(RECIPES[type].cost)) startPlacing(type);
+    if (craftPanel.classList.contains('open')) {
+      if (n >= 0 && n < HOTKEYS.length) {
+        const type = HOTKEYS[n];
+        if (canAfford(RECIPES[type].cost)) startPlacing(type);
+      }
+    } else if (typeof selectBelt === 'function') {
+      selectBelt(n);
     }
   }
 });
