@@ -3,7 +3,7 @@
 // охотятся на игрока (активны ночью). Дроп мяса/костей — через addItem по id.
 let MOBS = {};            // id → определение
 let MOB_DEFS = [];        // список определений
-fetch('data/mobs.json?v=9')
+fetch('data/mobs.json?v=10')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => { MOB_DEFS = db.mobs; for (const m of MOB_DEFS) MOBS[m.id] = m; })
   .catch(err => console.warn('mobs.json не загружен:', err));

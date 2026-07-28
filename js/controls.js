@@ -27,7 +27,8 @@ function pitchClamp() {
 }
 
 addEventListener('touchstart', e => {
-  if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('#placeControls')) return;
+  if (e.target.closest('.panel') || e.target.closest('button') ||
+      e.target.closest('#placeControls') || e.target.closest('#belt')) return;
   for (const t of e.changedTouches) {
     const jr = joyEl.getBoundingClientRect();
     const inJoy = t.clientX > jr.left - 30 && t.clientX < jr.right + 30 &&
