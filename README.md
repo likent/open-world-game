@@ -42,3 +42,5 @@ No build step — `index.html` loads Three.js r128 from cdnjs, then the game mod
 - `js/controls.js` — touch + keyboard/mouse input, camera view
 - `js/daynight.js` — day/night cycle
 - `js/main.js` — physics/collision, camera, game loop
+
+**Cache busting:** CSS/JS are linked with a `?v=N` query in `index.html`. Bump `N` on every change you deploy, otherwise browsers keep serving stale cached files (and can mix old + new, which breaks the page).

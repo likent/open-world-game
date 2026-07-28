@@ -59,22 +59,11 @@ canvas { display: block; }
   font-size: 24px;
 }
 #invBtn {
-  right: 34px; bottom: 200px;
-  width: 56px; height: 56px;
-  font-size: 24px;
+  right: 30px; bottom: 202px;
+  width: 64px; height: 64px;
+  font-size: 30px;
 }
 
-#hud {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
-  left: 16px;
-  color: rgba(255,255,255,0.85);
-  font-size: 14px;
-  line-height: 1.6;
-  z-index: 10;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-  pointer-events: none;
-}
 #clockHud {
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 12px);
