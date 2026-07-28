@@ -15,8 +15,6 @@ const inv = { slots: new Array(INV_SLOTS).fill(null) };
 // --- элементы UI ---
 const grid = document.getElementById('invGrid');
 const invPanel = document.getElementById('inventory');
-const woodCnt = document.getElementById('woodCnt');
-const stoneCnt = document.getElementById('stoneCnt');
 
 // ============ ОПЕРАЦИИ ============
 function countItem(id) {
@@ -107,13 +105,8 @@ function renderInventoryPanel() {
   }
   grid.innerHTML = html;
 }
-function updateHud() {
-  if (woodCnt) woodCnt.textContent = countItem('wood');
-  if (stoneCnt) stoneCnt.textContent = countItem('stone');
-}
-// «что-то изменилось» — обновить HUD, рюкзак и доступность рецептов
+// «что-то изменилось» — обновить рюкзак и доступность рецептов
 function updateInv() {
-  updateHud();
   renderInventoryPanel();
   if (typeof refreshRecipes === 'function') refreshRecipes();
 }
@@ -196,6 +189,10 @@ function toggleInventory() {
   }
 }
 document.getElementById('invBtn').addEventListener('click', toggleInventory);
+// крестик закрывает свою панель (рюкзак/крафт) — на телефоне кнопка-переключатель под панелью
+document.querySelectorAll('.panelClose').forEach(btn => {
+  btn.addEventListener('click', () => btn.closest('.panel').classList.remove('open'));
+});
 
 // ============ СТАРТОВЫЙ НАБОР ============
 addItem('wood', 120);
