@@ -1,12 +1,28 @@
 // ============ ИНВЕНТАРЬ (слоты + стаки) ============
-// Реестр предметов: id → отображение и максимум в стопке
-const ITEMS = {
-  wood:  { name: 'Дерево', icon: '🪵', max: 99 },
-  stone: { name: 'Камень', icon: '🪨', max: 99 },
-  apple: { name: 'Яблоко', icon: '🍎', max: 16 },
-  coal:  { name: 'Уголь',  icon: '⚫', max: 99 },
+// База предметов лежит в data/items.json как таблица записей с первичным ключом id.
+// Всё в игре ссылается на предмет по строковому id: слоты рюкзака { id, count },
+// дропы при добыче (gather.js), стоимость рецептов (building.js) и будущие лежащие
+// в мире предметы { id, count, x, z }. ITEMS — карта id → запись (строится из таблицы).
+// Ниже — запасной минимум на случай, если json не загрузился (например, через file://).
+let ITEMS = {
+  wood:  { id: 'wood',  name: 'Дерево', icon: '🪵', type: 'resource', stack: 99, desc: '' },
+  stone: { id: 'stone', name: 'Камень', icon: '🪨', type: 'resource', stack: 99, desc: '' },
+  apple: { id: 'apple', name: 'Яблоко', icon: '🍎', type: 'food',     stack: 16, desc: '' },
+  coal:  { id: 'coal',  name: 'Уголь',  icon: '⚫', type: 'fuel',     stack: 99, desc: '' },
 };
-const itemMax = id => ITEMS[id]?.max ?? 99;
+const itemDef = id => ITEMS[id] || { id, name: id, icon: '❓', type: 'misc', stack: 99, desc: '' };
+const itemMax = id => itemDef(id).stack ?? 99;
+
+// Загружаем таблицу предметов из JSON и строим карту id → запись
+fetch('data/items.json?v=4')
+  .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+  .then(db => {
+    const map = {};
+    for (const it of db.items) map[it.id] = it;
+    ITEMS = map;
+    updateInv();
+  })
+  .catch(err => console.warn('items.json не загружен, использую запасную базу:', err));
 
 const INV_SLOTS = 24;                 // 6×4 рюкзак
 // Каждый слот: null | { id, count }
@@ -79,16 +95,6 @@ function moveStack(from, to) {
     if (a.count <= 0) inv.slots[from] = null;
   } else { inv.slots[to] = a; inv.slots[from] = b; } // обмен
 }
-// разделить стопку пополам в ближайший пустой слот
-function splitStack(idx) {
-  const s = inv.slots[idx];
-  if (!s || s.count < 2) return;
-  const empty = inv.slots.indexOf(null);
-  if (empty < 0) return;
-  const half = Math.floor(s.count / 2);
-  s.count -= half;
-  inv.slots[empty] = { id: s.id, count: half };
-}
 
 // ============ ОТРИСОВКА ============
 function renderInventoryPanel() {
@@ -96,7 +102,7 @@ function renderInventoryPanel() {
   for (let i = 0; i < inv.slots.length; i++) {
     const s = inv.slots[i];
     if (s) {
-      const it = ITEMS[s.id];
+      const it = itemDef(s.id);
       html += `<div class="invSlot filled" data-index="${i}" title="${it.name}">` +
               `<span class="ic">${it.icon}</span><span class="cnt">${s.count}</span></div>`;
     } else {
@@ -111,14 +117,39 @@ function updateInv() {
   if (typeof refreshRecipes === 'function') refreshRecipes();
 }
 
+// ============ КАРТОЧКА ПРЕДМЕТА (по удержанию) ============
+let tip = null; // всплывающая карточка с названием/описанием
+function showTip(idx, x, y) {
+  hideTip();
+  const s = inv.slots[idx];
+  if (!s) return;
+  const it = itemDef(s.id);
+  tip = document.createElement('div');
+  tip.className = 'invTip';
+  tip.innerHTML = `<div class="tipName">${it.icon} ${it.name}</div>` +
+                  (it.desc ? `<div class="tipDesc">${it.desc}</div>` : '');
+  document.body.appendChild(tip);
+  // разместить над пальцем/курсором, не вылезая за края экрана
+  const r = tip.getBoundingClientRect();
+  let left = x - r.width / 2;
+  left = Math.max(8, Math.min(innerWidth - r.width - 8, left));
+  let top = y - r.height - 16;
+  if (top < 8) top = y + 16;
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+}
+function hideTip() {
+  if (tip) { tip.remove(); tip = null; }
+}
+
 // ============ DRAG & DROP (мышь + палец) ============
-let drag = null; // { from, sx, sy, active, ghost, lp }
+let drag = null; // { from, sx, sy, active, ghost, hold }
 
 function makeGhost(idx) {
   const s = inv.slots[idx];
   const g = document.createElement('div');
   g.className = 'invGhost';
-  g.innerHTML = `<span class="ic">${ITEMS[s.id].icon}</span><span class="cnt">${s.count}</span>`;
+  g.innerHTML = `<span class="ic">${itemDef(s.id).icon}</span><span class="cnt">${s.count}</span>`;
   return g;
 }
 function endDragCleanup() {
@@ -131,12 +162,13 @@ grid.addEventListener('pointerdown', e => {
   const idx = +slotEl.dataset.index;
   if (!inv.slots[idx]) return;
   e.preventDefault();
+  hideTip();
   drag = {
     from: idx, sx: e.clientX, sy: e.clientY, active: false, ghost: null,
-    // долгое нажатие без движения — разделить стопку (мобильный аналог ПКМ)
-    lp: setTimeout(() => {
-      if (drag && !drag.active) { splitStack(idx); endDragCleanup(); updateInv(); }
-    }, 500),
+    // удержание без движения — показать карточку предмета (и отменить перетаскивание)
+    hold: setTimeout(() => {
+      if (drag && !drag.active) { showTip(idx, drag.sx, drag.sy); endDragCleanup(); }
+    }, 400),
   };
 });
 addEventListener('pointermove', e => {
@@ -144,7 +176,7 @@ addEventListener('pointermove', e => {
   const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
   if (!drag.active && Math.hypot(dx, dy) > 8) {      // начали тащить
     drag.active = true;
-    clearTimeout(drag.lp);
+    clearTimeout(drag.hold);
     drag.ghost = makeGhost(drag.from);
     document.body.appendChild(drag.ghost);
   }
@@ -155,8 +187,9 @@ addEventListener('pointermove', e => {
   }
 });
 addEventListener('pointerup', e => {
+  hideTip();
   if (!drag) return;
-  clearTimeout(drag.lp);
+  clearTimeout(drag.hold);
   if (drag.active) {
     const under = document.elementFromPoint(e.clientX, e.clientY);
     const tEl = under && under.closest && under.closest('.invSlot');
@@ -167,18 +200,10 @@ addEventListener('pointerup', e => {
     drag = null; // просто тап — ничего
   }
 });
-// ПКМ на десктопе — разделить стопку пополам
-grid.addEventListener('contextmenu', e => {
-  const slotEl = e.target.closest('.invSlot');
-  if (slotEl && grid.contains(slotEl)) {
-    e.preventDefault();
-    splitStack(+slotEl.dataset.index);
-    updateInv();
-  }
-});
 
 // ============ ОТКРЫТИЕ / ЗАКРЫТИЕ ============
 function toggleInventory() {
+  hideTip();
   const opening = !invPanel.classList.contains('open');
   invPanel.classList.toggle('open', opening);
   if (opening) {
@@ -191,7 +216,7 @@ function toggleInventory() {
 document.getElementById('invBtn').addEventListener('click', toggleInventory);
 // крестик закрывает свою панель (рюкзак/крафт) — на телефоне кнопка-переключатель под панелью
 document.querySelectorAll('.panelClose').forEach(btn => {
-  btn.addEventListener('click', () => btn.closest('.panel').classList.remove('open'));
+  btn.addEventListener('click', () => { hideTip(); btn.closest('.panel').classList.remove('open'); });
 });
 
 // ============ СТАРТОВЫЙ НАБОР ============
