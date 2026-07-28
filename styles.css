@@ -40,28 +40,33 @@ canvas { display: block; }
 }
 .roundBtn:active { background: rgba(255,255,255,0.25); }
 
-#jumpBtn {
-  right: 30px; bottom: 46px;
-  width: 74px; height: 74px;
-  font-size: 12px;
-  letter-spacing: 1px;
-}
+/* главная кнопка действия — большая, правый нижний угол (иконка инструмента/кулака) */
 #actionBtn {
-  right: 116px; bottom: 76px;
-  width: 64px; height: 64px;
-  font-size: 26px;
+  right: 28px; bottom: 44px;
+  width: 76px; height: 76px;
+  font-size: 32px;
   display: none;
 }
 #actionBtn.visible { display: flex; }
-#craftBtn {
-  right: 34px; bottom: 136px;
-  width: 56px; height: 56px;
-  font-size: 24px;
+/* прыжок — выше действия, примерно там, где раньше был инвентарь */
+#jumpBtn {
+  right: 36px; bottom: 198px;
+  width: 60px; height: 60px;
+  font-size: 12px;
+  letter-spacing: 1px;
 }
+/* инвентарь и крафт — вверх, из зоны большого пальца */
 #invBtn {
-  right: 30px; bottom: 202px;
-  width: 64px; height: 64px;
-  font-size: 30px;
+  top: calc(env(safe-area-inset-top, 0px) + 46px);
+  left: 16px;
+  width: 44px; height: 44px;
+  font-size: 22px;
+}
+#craftBtn {
+  top: calc(env(safe-area-inset-top, 0px) + 46px);
+  left: 66px;
+  width: 44px; height: 44px;
+  font-size: 22px;
 }
 
 #hpHud {
@@ -306,6 +311,42 @@ canvas { display: block; }
 #placeOk:disabled { background: rgba(120,120,120,0.5); opacity: 0.6; }
 #placeCancel { background: rgba(180,60,60,0.75); }
 
+#belt {
+  position: fixed;
+  left: 50%; bottom: 148px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 11;
+}
+.beltSlot {
+  position: relative;
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.38);
+  border: 2px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.beltSlot.active {
+  border-color: #ffd257;
+  background: rgba(255,210,87,0.18);
+  box-shadow: 0 0 9px rgba(255,210,87,0.55);
+}
+.beltSlot .bk {
+  position: absolute;
+  top: 1px; left: 4px;
+  font-size: 9px;
+  opacity: 0.5;
+  color: #fff;
+}
+
 #crosshair {
   position: fixed;
   left: 50%; top: 50%;
@@ -318,7 +359,7 @@ canvas { display: block; }
 }
 #hint {
   position: fixed;
-  left: 50%; bottom: 170px;
+  left: 50%; bottom: 210px;
   transform: translateX(-50%);
   color: rgba(255,255,255,0.9);
   font-size: 13px;

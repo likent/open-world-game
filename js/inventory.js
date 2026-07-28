@@ -5,10 +5,15 @@
 // в мире предметы { id, count, x, z }. ITEMS — карта id → запись (строится из таблицы).
 // Ниже — запасной минимум на случай, если json не загрузился (например, через file://).
 let ITEMS = {
-  wood:  { id: 'wood',  name: 'Дерево', icon: '🪵', type: 'resource', stack: 99, desc: '' },
-  stone: { id: 'stone', name: 'Камень', icon: '🪨', type: 'resource', stack: 99, desc: '' },
-  apple: { id: 'apple', name: 'Яблоко', icon: '🍎', type: 'food',     stack: 16, desc: '' },
-  coal:  { id: 'coal',  name: 'Уголь',  icon: '⚫', type: 'fuel',     stack: 99, desc: '' },
+  wood:    { id: 'wood',    name: 'Дерево', icon: '🪵', type: 'resource', stack: 99, desc: '' },
+  stone:   { id: 'stone',   name: 'Камень', icon: '🪨', type: 'resource', stack: 99, desc: '' },
+  apple:   { id: 'apple',   name: 'Яблоко', icon: '🍎', type: 'food',     stack: 16, heal: 8, desc: '' },
+  coal:    { id: 'coal',    name: 'Уголь',  icon: '⚫', type: 'fuel',     stack: 99, desc: '' },
+  meat:    { id: 'meat',    name: 'Мясо',   icon: '🥩', type: 'food',     stack: 32, heal: 22, desc: '' },
+  bone:    { id: 'bone',    name: 'Кость',  icon: '🦴', type: 'material', stack: 99, desc: '' },
+  axe:     { id: 'axe',     name: 'Топор',  icon: '🪓', type: 'tool', use: 'wood',   power: 1, stack: 1, desc: '' },
+  pickaxe: { id: 'pickaxe', name: 'Кирка',  icon: '⛏️', type: 'tool', use: 'stone',  power: 1, stack: 1, desc: '' },
+  sword:   { id: 'sword',   name: 'Меч',    icon: '⚔️', type: 'tool', use: 'attack', power: 6, stack: 1, desc: '' },
 };
 const itemDef = id => ITEMS[id] || { id, name: id, icon: '❓', type: 'misc', stack: 99, desc: '' };
 const itemMax = id => itemDef(id).stack ?? 99;
@@ -25,7 +30,7 @@ function itemUses(id) {
 }
 
 // Загружаем таблицу предметов из JSON и строим карту id → запись
-fetch('data/items.json?v=7')
+fetch('data/items.json?v=9')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => {
     const map = {};
@@ -122,9 +127,10 @@ function renderInventoryPanel() {
   }
   grid.innerHTML = html;
 }
-// «что-то изменилось» — обновить рюкзак и доступность рецептов
+// «что-то изменилось» — обновить рюкзак, пояс и доступность рецептов
 function updateInv() {
   renderInventoryPanel();
+  if (typeof renderBelt === 'function') renderBelt();
   if (typeof refreshRecipes === 'function') refreshRecipes();
 }
 

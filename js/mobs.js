@@ -3,7 +3,7 @@
 // охотятся на игрока (активны ночью). Дроп мяса/костей — через addItem по id.
 let MOBS = {};            // id → определение
 let MOB_DEFS = [];        // список определений
-fetch('data/mobs.json?v=7')
+fetch('data/mobs.json?v=9')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => { MOB_DEFS = db.mobs; for (const m of MOB_DEFS) MOBS[m.id] = m; })
   .catch(err => console.warn('mobs.json не загружен:', err));
@@ -18,7 +18,6 @@ const PLAYER_DMG = 3;     // урон игрока за удар
 const mobs = [];          // активные: { def, mesh, x, z, heading, wander, flee, atkCd, hp }
 let spawnTimer = 0;
 let lastHitAt = -999;     // когда игрока последний раз ударили (для регена)
-let aimedMob = null;      // ближайший моб в зоне удара — для кнопки/подсказки
 
 function isNight() {
   const ang = (dayTime / DAY_LEN) * Math.PI * 2;
@@ -93,15 +92,29 @@ function damageMob(m, dmg) {
   return false;
 }
 
-// удар игрока по нацеленному мобу (вызывается из hitTarget в gather.js)
-function hitAimedMob() {
-  if (!aimedMob) return false;
-  swingT = 0.3;
-  damageMob(aimedMob, PLAYER_DMG);
-  aimedMob = null; // пересчитается в следующем кадре
-  return true;
+// стены построек не пускают мобов (жилище реально защищает)
+function collideMobWalls(m) {
+  if (typeof buildings === 'undefined') return;
+  const my = terrainHeight(m.x, m.z);
+  for (const b of buildings) {
+    if (!isWallType(b.type)) continue;
+    if (my >= b.baseY + WALL_H - 0.1 || my < b.baseY - 1.0) continue; // не на уровне стены
+    const dirX = Math.cos(b.rotY), dirZ = -Math.sin(b.rotY);
+    const relX = m.x - b.x, relZ = m.z - b.z;
+    const proj = relX * dirX + relZ * dirZ;
+    for (const [a, bb] of WALL_SEGS[b.type]) {
+      const tt = Math.max(a, Math.min(bb, proj));
+      const cpX = b.x + dirX * tt, cpZ = b.z + dirZ * tt;
+      const ddx = m.x - cpX, ddz = m.z - cpZ;
+      const d2 = ddx * ddx + ddz * ddz;
+      const min = (WALL_PUSH[b.type] || 0.6) + 0.25; // мобы чуть толще игрока
+      if (d2 < min * min && d2 > 1e-4) {
+        const d = Math.sqrt(d2);
+        m.x = cpX + ddx / d * min; m.z = cpZ + ddz / d * min;
+      }
+    }
+  }
 }
-function aimMob() { return aimedMob; }
 
 function respawnPlayerDead() {
   player.hp = player.maxHp;
@@ -136,9 +149,6 @@ function updateMobs(dt) {
     }
   }
 
-  aimedMob = null;
-  let bestAim = MELEE_R * MELEE_R;
-
   for (let i = mobs.length - 1; i >= 0; i--) {
     const m = mobs[i], def = m.def;
     const dx = player.pos.x - m.x, dz = player.pos.z - m.z;
@@ -170,21 +180,20 @@ function updateMobs(dt) {
     } else {
       m.heading += 2.2; m.wander = 0.3;                 // упёрлись — развернуться
     }
+    collideMobWalls(m);                                 // стены не пускают
 
-    // атака игрока
+    const gy = terrainHeight(m.x, m.z);
+
+    // атака игрока — только если он примерно на высоте моба (не с земли на этаж)
     if (m.atkCd > 0) m.atkCd -= dt;
-    if (def.hostile && def.damage > 0 && distP < 1.7 && m.atkCd <= 0) {
+    if (def.hostile && def.damage > 0 && distP < 1.7 &&
+        Math.abs(player.pos.y - gy) < 2.6 && m.atkCd <= 0) {
       player.hp = Math.max(0, player.hp - def.damage);
       m.atkCd = 1.0; lastHitAt = now;
       if (player.hp <= 0) respawnPlayerDead();
     }
 
-    // нацеливание для удара игрока (ближайший в радиусе)
-    const d2 = dx * dx + dz * dz;
-    if (d2 < bestAim) { bestAim = d2; aimedMob = m; }
-
     // размещение меша + анимация ног/покачивание
-    const gy = terrainHeight(m.x, m.z);
     m.phase += dt * spd * 2.2;
     m.mesh.position.set(m.x, gy, m.z);
     m.mesh.rotation.y = m.heading;

@@ -235,25 +235,25 @@ function animate() {
   // мобы
   if (typeof updateMobs === 'function') updateMobs(dt);
 
-  // цель — моб в зоне удара приоритетнее ресурса
-  const mobT = (typeof aimMob === 'function') ? aimMob() : null;
-  target = mobT ? null : findTarget();
-  if ((mobT || target) && !placing) {
+  // цель — по направлению взгляда (что перед игроком)
+  target = (typeof aimTarget === 'function') ? aimTarget() : null;
+  if (!placing) {
+    // кнопка действия всегда видна и показывает активный инструмент (или кулак)
     actionBtn.classList.add('visible');
-    if (mobT) {
-      actionBtn.textContent = mobT.def.hostile ? '⚔️' : '🥩';
-      hint.textContent = `${mobT.def.name} (${Math.ceil(mobT.hp)}/${mobT.def.hp})`;
-    } else if (target.kind === 'tree') {
-      actionBtn.textContent = '🪓';
-      hint.textContent = `Рубить дерево (${target.obj.hp}/3)`;
+    actionBtn.textContent = (typeof activeTool === 'function') ? activeTool().icon : '👊';
+    if (target) {
+      if (target.kind === 'mob') {
+        const m = target.obj;
+        hint.textContent = `${m.def.name} (${Math.ceil(m.hp)}/${m.def.hp})`;
+      } else if (target.kind === 'tree') {
+        hint.textContent = `Рубить дерево (${target.obj.hp}/3)`;
+      } else {
+        hint.textContent = `Добыть камень (${target.obj.hp}/4)`;
+      }
+      hint.classList.add('visible');
     } else {
-      actionBtn.textContent = '⛏️';
-      hint.textContent = `Добыть камень (${target.obj.hp}/4)`;
+      hint.classList.remove('visible');
     }
-    hint.classList.add('visible');
-  } else if (!placing) {
-    actionBtn.classList.remove('visible');
-    hint.classList.remove('visible');
   } else {
     actionBtn.classList.remove('visible');
   }

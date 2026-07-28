@@ -32,9 +32,11 @@ Data-driven where possible: items live in `data/items.json`; recipes and drop ta
   - Wall-on-wall stacking, multi-storey support, snap prefers the storey at the player's feet level
   - Continuous build mode (piece stays selected)
 - Physics: segment wall collision with a walkable doorway, walkable wall tops, stair collision, head-bump ceilings, step-up logic
+- Tools & belt (hotbar): select axe / pickaxe / sword on the belt; you hit what you look at (aim-based, no more chopping with your back). The matching tool is fast; bare fists still gather, just slower. The action button shows the held tool (or 👊).
+- Mobs respect the world: building walls block them, and they can't hit you from far below (build up to stay safe).
 - Controls:
-  - **Mobile:** left joystick, right side swipe = camera, JUMP / 🪓 / 🔨 buttons
-  - **Desktop:** WASD + mouse (pointer lock), Space jump, E hit, C craft panel, I inventory, V camera toggle, 1–8 recipe hotkeys, click/Enter to place, Esc cancel
+  - **Mobile:** left joystick, right side swipe = camera, big action button (tool/fist) bottom-right, JUMP above it, belt across the bottom (tap to select), 🎒/🔨 top-left
+  - **Desktop:** WASD + mouse (pointer lock), Space jump, E hit, C craft panel, I inventory, V camera toggle, 1–4 belt select (or recipe 1–8 while the craft panel is open), click/Enter to place, Esc cancel
 - First-person (default) and third-person camera
 
 ## Notes
