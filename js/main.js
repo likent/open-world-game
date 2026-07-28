@@ -238,9 +238,10 @@ function animate() {
   // цель — по направлению взгляда (что перед игроком)
   target = (typeof aimTarget === 'function') ? aimTarget() : null;
   if (!placing) {
-    // кнопка действия всегда видна и показывает активный инструмент (или кулак)
+    // кнопка действия всегда видна и показывает, что в руке (или кулак)
     actionBtn.classList.add('visible');
-    actionBtn.textContent = (typeof activeTool === 'function') ? activeTool().icon : '👊';
+    actionBtn.textContent = (typeof heldIcon === 'function') ? heldIcon() : '👊';
+    const mode = (typeof heldMode === 'function') ? heldMode() : 'fist';
     if (target) {
       if (target.kind === 'mob') {
         const m = target.obj;
@@ -250,6 +251,9 @@ function animate() {
       } else {
         hint.textContent = `Добыть камень (${target.obj.hp}/4)`;
       }
+      hint.classList.add('visible');
+    } else if (mode === 'food') {
+      hint.textContent = `Съесть ${heldIcon()}`;
       hint.classList.add('visible');
     } else {
       hint.classList.remove('visible');

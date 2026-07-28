@@ -8,8 +8,10 @@ const actionBtn = document.getElementById('actionBtn');
 const hint = document.getElementById('hint');
 
 // Цель — то, на что смотрит игрок (ближайшее к центру взгляда, в пределах досягаемости).
-// Тип инструмента цель не ограничивает — он влияет на эффективность удара (см. hitTarget).
+// Цель имеет смысл только когда в руке инструмент или пусто (кулак); с едой/прочим — нет.
 function aimTarget() {
+  const mode = (typeof heldMode === 'function') ? heldMode() : 'fist';
+  if (mode !== 'tool' && mode !== 'fist') return null;
   const hx = Math.sin(player.heading), hz = Math.cos(player.heading);
   let best = null, bestScore = AIM_DOT;
   const consider = (kind, obj, ox, oz, oy, reach) => {
@@ -29,21 +31,25 @@ function aimTarget() {
 function findTarget() { return aimTarget(); } // совместимость
 
 function hitTarget() {
+  const mode = (typeof heldMode === 'function') ? heldMode() : 'fist';
+  if (mode === 'food') { if (typeof eatHeld === 'function') eatHeld(); return; } // еда — съесть
+  if (mode === 'hold') return;                                                   // прочее — просто держим
+
   const t = aimTarget();
   if (!t) return;
   swingT = 0.3;
-  const tool = (typeof activeTool === 'function') ? activeTool() : null;
+  const held = (typeof heldDef === 'function') ? heldDef() : null; // null = кулак
 
   if (t.kind === 'mob') {
     // меч бьёт в полную силу; кулак/не оружие — слабее
-    const dmg = (tool && tool.use === 'attack') ? tool.power : 2;
+    const dmg = (held && held.use === 'attack') ? held.power : 2;
     if (typeof damageMob === 'function') damageMob(t.obj, dmg);
     return;
   }
 
   // подходящий инструмент рубит/копает эффективно; кулаком или не тем — медленнее
-  const matches = tool && ((t.kind === 'tree' && tool.use === 'wood') ||
-                           (t.kind === 'rock' && tool.use === 'stone'));
+  const matches = held && ((t.kind === 'tree' && held.use === 'wood') ||
+                           (t.kind === 'rock' && held.use === 'stone'));
   if (!matches && Math.random() > 0.4) return; // «тюк» без прогресса — реже добываешь
 
   const o = t.obj;

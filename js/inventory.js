@@ -30,7 +30,7 @@ function itemUses(id) {
 }
 
 // Загружаем таблицу предметов из JSON и строим карту id → запись
-fetch('data/items.json?v=9')
+fetch('data/items.json?v=10')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => {
     const map = {};
@@ -52,6 +52,7 @@ const invPanel = document.getElementById('inventory');
 function countItem(id) {
   let n = 0;
   for (const s of inv.slots) if (s && s.id === id) n += s.count;
+  if (typeof belt !== 'undefined') for (const s of belt.slots) if (s && s.id === id) n += s.count;
   return n;
 }
 // свободное место под предмет (для стаков + пустых слотов)
@@ -94,22 +95,40 @@ function removeItem(id, count) {
       if (s.count === 0) inv.slots[i] = null;
     }
   }
+  if (typeof belt !== 'undefined') for (let i = belt.slots.length - 1; i >= 0 && count > 0; i--) {
+    const s = belt.slots[i];
+    if (s && s.id === id) {
+      const take = Math.min(s.count, count);
+      s.count -= take; count -= take;
+      if (s.count === 0) belt.slots[i] = null;
+    }
+  }
   updateInv();
   return true;
 }
 
-// перенос/слияние/обмен стопок между слотами
-function moveStack(from, to) {
-  if (from === to) return;
-  const a = inv.slots[from], b = inv.slots[to];
+// --- слот адресуется ссылкой { arr, i, kind }: работает и для рюкзака, и для пояса ---
+function slotRefFromEl(el) {
+  if (!el) return null;
+  if (el.dataset.index !== undefined) return { arr: inv.slots, i: +el.dataset.index, kind: 'inv' };
+  if (el.dataset.bi !== undefined && typeof belt !== 'undefined') return { arr: belt.slots, i: +el.dataset.bi, kind: 'belt' };
+  return null;
+}
+const getSlot = ref => ref.arr[ref.i];
+const setSlot = (ref, v) => { ref.arr[ref.i] = v; };
+
+// перенос/слияние/обмен стопок между любыми слотами (рюкзак ↔ пояс)
+function moveStackRef(from, to) {
+  if (from.arr === to.arr && from.i === to.i) return;
+  const a = getSlot(from), b = getSlot(to);
   if (!a) return;
-  if (!b) { inv.slots[to] = a; inv.slots[from] = null; }
-  else if (b.id === a.id) {              // слить однотипные
+  if (!b) { setSlot(to, a); setSlot(from, null); }
+  else if (b.id === a.id) {
     const room = itemMax(a.id) - b.count;
     const mv = Math.min(room, a.count);
     b.count += mv; a.count -= mv;
-    if (a.count <= 0) inv.slots[from] = null;
-  } else { inv.slots[to] = a; inv.slots[from] = b; } // обмен
+    if (a.count <= 0) setSlot(from, null);
+  } else { setSlot(to, a); setSlot(from, b); }
 }
 
 // ============ ОТРИСОВКА ============
@@ -136,9 +155,8 @@ function updateInv() {
 
 // ============ КАРТОЧКА ПРЕДМЕТА (по удержанию) ============
 let tip = null; // всплывающая карточка с названием/описанием
-function showTip(idx, x, y) {
+function showTipSlot(s, x, y) {
   hideTip();
-  const s = inv.slots[idx];
   if (!s) return;
   const it = itemDef(s.id);
   const uses = itemUses(s.id);
@@ -169,42 +187,46 @@ function hideTip() {
   if (tip) { tip.remove(); tip = null; }
 }
 
-// ============ DRAG & DROP (мышь + палец) ============
-let drag = null; // { from, sx, sy, active, ghost, hold }
+// ============ DRAG & DROP (мышь + палец) — рюкзак и пояс ============
+let drag = null; // { from:ref, sx, sy, active, ghost, hold }
 
-function makeGhost(idx) {
-  const s = inv.slots[idx];
+function makeGhostRef(ref) {
+  const s = getSlot(ref);
   const g = document.createElement('div');
   g.className = 'invGhost';
-  g.innerHTML = `<span class="ic">${itemDef(s.id).icon}</span><span class="cnt">${s.count}</span>`;
+  g.innerHTML = `<span class="ic">${itemDef(s.id).icon}</span>` +
+                (s.count > 1 ? `<span class="cnt">${s.count}</span>` : '');
   return g;
 }
 function endDragCleanup() {
   if (drag && drag.ghost) drag.ghost.remove();
   drag = null;
 }
-grid.addEventListener('pointerdown', e => {
-  const slotEl = e.target.closest('.invSlot');
-  if (!slotEl || !grid.contains(slotEl)) return;
-  const idx = +slotEl.dataset.index;
-  if (!inv.slots[idx]) return;
+// общий обработчик нажатия на слот — вешается и на рюкзак (grid), и на пояс (belt.js)
+function onSlotDown(e) {
+  const slotEl = e.target.closest('.invSlot, .beltSlot');
+  if (!slotEl) return;
+  const ref = slotRefFromEl(slotEl);
+  if (!ref) return;
   e.preventDefault();
   hideTip();
+  const has = !!getSlot(ref);
   drag = {
-    from: idx, sx: e.clientX, sy: e.clientY, active: false, ghost: null,
-    // удержание без движения — показать карточку предмета (и отменить перетаскивание)
-    hold: setTimeout(() => {
-      if (drag && !drag.active) { showTip(idx, drag.sx, drag.sy); endDragCleanup(); }
-    }, 400),
+    from: ref, sx: e.clientX, sy: e.clientY, active: false, ghost: null,
+    // удержание непустого слота — карточка предмета
+    hold: has ? setTimeout(() => {
+      if (drag && !drag.active) { showTipSlot(getSlot(ref), drag.sx, drag.sy); endDragCleanup(); }
+    }, 400) : null,
   };
-});
+}
+grid.addEventListener('pointerdown', onSlotDown);
 addEventListener('pointermove', e => {
   if (!drag) return;
   const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-  if (!drag.active && Math.hypot(dx, dy) > 8) {      // начали тащить
+  if (!drag.active && Math.hypot(dx, dy) > 8 && getSlot(drag.from)) { // тащим только непустой
     drag.active = true;
     clearTimeout(drag.hold);
-    drag.ghost = makeGhost(drag.from);
+    drag.ghost = makeGhostRef(drag.from);
     document.body.appendChild(drag.ghost);
   }
   if (drag.active) {
@@ -219,14 +241,16 @@ addEventListener('pointerup', e => {
   clearTimeout(drag.hold);
   if (drag.active) {
     const under = document.elementFromPoint(e.clientX, e.clientY);
-    const tEl = under && under.closest && under.closest('.invSlot');
-    if (tEl && grid.contains(tEl)) moveStack(drag.from, +tEl.dataset.index);
+    const tEl = under && under.closest && under.closest('.invSlot, .beltSlot');
+    const toRef = slotRefFromEl(tEl);
+    if (toRef) moveStackRef(drag.from, toRef);
     endDragCleanup();
     updateInv();
   } else {
-    const fromIdx = drag.from;
+    const ref = drag.from;
     drag = null;
-    eatFromSlot(fromIdx); // быстрый тап по еде — съесть
+    if (ref.kind === 'belt') { if (typeof selectBelt === 'function') selectBelt(ref.i); }
+    else eatFromSlot(ref.i); // рюкзак: быстрый тап по еде — съесть
   }
 });
 
