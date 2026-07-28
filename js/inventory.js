@@ -189,6 +189,10 @@ function toggleInventory() {
   }
 }
 document.getElementById('invBtn').addEventListener('click', toggleInventory);
+// крестик закрывает свою панель (рюкзак/крафт) — на телефоне кнопка-переключатель под панелью
+document.querySelectorAll('.panelClose').forEach(btn => {
+  btn.addEventListener('click', () => btn.closest('.panel').classList.remove('open'));
+});
 
 // ============ СТАРТОВЫЙ НАБОР ============
 addItem('wood', 120);
