@@ -3,7 +3,7 @@
 // охотятся на игрока (активны ночью). Дроп мяса/костей — через addItem по id.
 let MOBS = {};            // id → определение
 let MOB_DEFS = [];        // список определений
-fetch('data/mobs.json?v=12')
+fetch('data/mobs.json?v=13')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => { MOB_DEFS = db.mobs; for (const m of MOB_DEFS) MOBS[m.id] = m; })
   .catch(err => console.warn('mobs.json не загружен:', err));
@@ -73,8 +73,8 @@ function spawnMob(def) {
     if (terrainHeight(x, z) < WATER_Y + 0.6) continue; // не в воде
     const mesh = buildMobMesh(def);
     scene.add(mesh);
-    mobs.push({ def, mesh, x, z, heading: a, wander: 0, flee: 0, atkCd: 0, hp: def.hp, phase: 0,
-                bestDist: Infinity, stuckT: 0, giveUp: 0 });
+    mobs.push({ def, mesh, x, z, y: terrainHeight(x, z), heading: a, wander: 0, flee: 0, atkCd: 0,
+                hp: def.hp, phase: 0, bestDist: Infinity, stuckT: 0, giveUp: 0 });
     return;
   }
 }
@@ -98,13 +98,13 @@ function damageMob(m, dmg) {
 // постройки не пускают мобов (стены, закрытая дверь, фундамент). Возвращает true, если упёрся.
 function collideMobWalls(m) {
   if (typeof buildings === 'undefined') return false;
-  const my = terrainHeight(m.x, m.z);
+  const my = (m.y !== undefined) ? m.y : terrainHeight(m.x, m.z);
   let pushed = false;
   for (const b of buildings) {
-    // фундамент — сплошной блок сбоку
+    // фундамент — сплошной блок сбоку (порог top-0.5: сверху/с лестницы можно зайти)
     if (b.type === 'foundation') {
       const top = topOf(b), half = CELL / 2, r = 0.4;
-      if (my < top - 0.1 && Math.abs(m.x - b.x) < half + r && Math.abs(m.z - b.z) < half + r) {
+      if (my < top - 0.5 && Math.abs(m.x - b.x) < half + r && Math.abs(m.z - b.z) < half + r) {
         const penX = (half + r) - Math.abs(m.x - b.x);
         const penZ = (half + r) - Math.abs(m.z - b.z);
         if (penX < penZ) m.x = b.x + Math.sign((m.x - b.x) || 1) * (half + r);
@@ -132,6 +132,32 @@ function collideMobWalls(m) {
     }
   }
   return pushed;
+}
+
+// высота «пола» для моба с учётом лестниц и платформ (чтобы подниматься по лестнице)
+function structGroundAt(x, z, curY) {
+  let g = terrainHeight(x, z);
+  if (typeof buildings === 'undefined') return g;
+  const STEP = 0.6; // мобам чуть щедрее, чем игроку
+  for (const b of buildings) {
+    if (isPlatform(b)) {
+      if (Math.abs(x - b.x) <= CELL / 2 + 0.1 && Math.abs(z - b.z) <= CELL / 2 + 0.1) {
+        const top = topOf(b);
+        if (curY >= top - STEP) g = Math.max(g, top);
+      }
+    } else if (b.type === 'stairs') {
+      const dirX = Math.cos(b.rotY), dirZ = -Math.sin(b.rotY);
+      const perpX = Math.sin(b.rotY), perpZ = Math.cos(b.rotY);
+      const relX = x - b.x, relZ = z - b.z;
+      const lu = relX * dirX + relZ * dirZ, lv = relX * perpX + relZ * perpZ;
+      if (Math.abs(lu) <= CELL / 2 && Math.abs(lv) <= 0.7) {
+        const stepIdx = Math.min(5, Math.max(0, Math.floor((lu + CELL / 2) / (CELL / 6))));
+        const h = b.baseY - stepIdx / 6 * STAIR_DROP;
+        if (curY >= h - STEP) g = Math.max(g, h);
+      }
+    }
+  }
+  return g;
 }
 
 function respawnPlayerDead() {
@@ -205,12 +231,14 @@ function updateMobs(dt) {
     // постройки не пускают; если охотник упёрся — скользим вдоль (найдём проём/открытую дверь)
     if (collideMobWalls(m) && def.hostile && m.flee <= 0) { m.heading += 0.7; m.wander = 0.25; }
 
-    const gy = terrainHeight(m.x, m.z);
+    // высота моба с учётом лестниц/плит — чтобы подниматься к игроку
+    m.y = structGroundAt(m.x, m.z, m.y);
+    const gy = m.y;
 
     // атака игрока — только если он примерно на высоте моба (не с земли на этаж)
     if (m.atkCd > 0) m.atkCd -= dt;
     if (def.hostile && def.damage > 0 && distP < 1.7 &&
-        Math.abs(player.pos.y - gy) < 2.6 && m.atkCd <= 0) {
+        Math.abs(player.pos.y - m.y) < 2.6 && m.atkCd <= 0) {
       player.hp = Math.max(0, player.hp - def.damage);
       m.atkCd = 1.0; lastHitAt = now; m.stuckT = 0; // достаёт игрока — не застрял
       if (player.hp <= 0) respawnPlayerDead();

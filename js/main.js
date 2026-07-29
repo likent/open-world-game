@@ -63,8 +63,10 @@ function animate() {
       const top = topOf(b);
       const half = CELL/2, r = 0.35;
       const relX = player.pos.x - b.x, relZ = player.pos.z - b.z;
+      // порог top-0.5: когда игрок в пределах «шага» от верха (напр. на верхней ступени) —
+      // коллизия отпускает, чтобы шагнуть на фундамент, а не прыгать
       if (Math.abs(relX) < half + r && Math.abs(relZ) < half + r &&
-          player.pos.y < top - 0.1 && player.pos.y > b.baseY - FOUND_SKIRT) {
+          player.pos.y < top - 0.5 && player.pos.y > b.baseY - FOUND_SKIRT) {
         const penX = (half + r) - Math.abs(relX);
         const penZ = (half + r) - Math.abs(relZ);
         if (penX < penZ) player.pos.x = b.x + Math.sign(relX || 1) * (half + r);
