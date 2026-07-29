@@ -58,7 +58,21 @@ function animate() {
   }
   // коллизия с постройками
   for (const b of buildings) {
-    if (isPlatform(b)) continue; // по плитам ходим
+    // фундамент — сплошной блок: держит сбоку, но сверху по нему ходим
+    if (b.type === 'foundation') {
+      const top = topOf(b);
+      const half = CELL/2, r = 0.35;
+      const relX = player.pos.x - b.x, relZ = player.pos.z - b.z;
+      if (Math.abs(relX) < half + r && Math.abs(relZ) < half + r &&
+          player.pos.y < top - 0.1 && player.pos.y > b.baseY - FOUND_SKIRT) {
+        const penX = (half + r) - Math.abs(relX);
+        const penZ = (half + r) - Math.abs(relZ);
+        if (penX < penZ) player.pos.x = b.x + Math.sign(relX || 1) * (half + r);
+        else             player.pos.z = b.z + Math.sign(relZ || 1) * (half + r);
+      }
+      continue;
+    }
+    if (isPlatform(b)) continue; // перекрытия — проходим под ними
     if (b.type === 'stairs') {
       // если игрок ниже поверхности марша — лестница твёрдая, выталкиваем
       const dirX = Math.cos(b.rotY), dirZ = -Math.sin(b.rotY);
@@ -92,7 +106,7 @@ function animate() {
       const dirX = Math.cos(b.rotY), dirZ = -Math.sin(b.rotY);
       const relX = player.pos.x - b.x, relZ = player.pos.z - b.z;
       const proj = relX * dirX + relZ * dirZ;
-      for (const [a, bb] of WALL_SEGS[b.type]) {
+      for (const [a, bb] of wallSegsFor(b)) {
         const tt = Math.max(a, Math.min(bb, proj));
         const cpX = b.x + dirX * tt, cpZ = b.z + dirZ * tt;
         const dx = player.pos.x - cpX, dz = player.pos.z - cpZ;
@@ -262,15 +276,23 @@ function animate() {
     actionBtn.classList.remove('visible');
   }
 
+  // отдельная кнопка взаимодействия — когда смотрим на дверь
+  const inter = (typeof interactTarget === 'function' && !placing) ? interactTarget() : null;
+  if (inter) {
+    interactBtn.classList.add('visible');
+    interactBtn.textContent = inter.mesh.userData.doorOpen > 0.5 ? '🚪' : '🔓';
+  } else {
+    interactBtn.classList.remove('visible');
+  }
+
   processRespawns(now);
 
   // огонь костров + двери
   for (const b of buildings) {
     if (b.type === 'door') {
-      const dx = player.pos.x - b.x, dz = player.pos.z - b.z;
-      const near = dx*dx + dz*dz < 4.4 && Math.abs(player.pos.y - b.baseY) < 2.2;
+      // открывается/закрывается кнопкой взаимодействия (см. doInteract в gather.js)
       const ud = b.mesh.userData;
-      ud.doorOpen += ((near ? 1 : 0) - ud.doorOpen) * Math.min(1, dt * 6);
+      ud.doorOpen += ((ud.doorTarget || 0) - ud.doorOpen) * Math.min(1, dt * 6);
       ud.doorPivot.rotation.y = -ud.doorOpen * Math.PI * 0.52;
       continue;
     }

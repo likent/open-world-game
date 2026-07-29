@@ -48,6 +48,14 @@ canvas { display: block; }
   display: none;
 }
 #actionBtn.visible { display: flex; }
+/* кнопка взаимодействия (дверь) — слева от кнопки действия, появляется по наведению */
+#interactBtn {
+  right: 118px; bottom: 70px;
+  width: 60px; height: 60px;
+  font-size: 26px;
+  display: none;
+}
+#interactBtn.visible { display: flex; }
 /* прыжок — выше действия, примерно там, где раньше был инвентарь */
 #jumpBtn {
   right: 36px; bottom: 198px;

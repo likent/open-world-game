@@ -82,6 +82,14 @@ actionBtn.addEventListener('click', e => {
   if (e.detail !== 0) hitTarget();
 });
 
+interactBtn.addEventListener('touchstart', e => {
+  e.stopPropagation();
+  doInteract();
+}, { passive: true });
+interactBtn.addEventListener('click', e => {
+  if (e.detail !== 0) doInteract();
+});
+
 // Настройки
 const settingsPanel = document.getElementById('settings');
 document.getElementById('settingsBtn').addEventListener('click', () => {
@@ -110,6 +118,7 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'Space' && player.onGround) { player.velY = JUMP; player.onGround = false; }
   if (e.code === 'KeyE') hitTarget();
+  if (e.code === 'KeyF') doInteract();
   if (e.code === 'KeyV') setView(!firstPerson);
   if (e.code === 'KeyC') toggleCraftPanel();
   if (e.code === 'KeyI') toggleInventory();

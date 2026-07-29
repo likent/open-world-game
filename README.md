@@ -33,7 +33,8 @@ Data-driven where possible: items live in `data/items.json`; recipes and drop ta
   - Continuous build mode (piece stays selected)
 - Physics: segment wall collision with a walkable doorway, walkable wall tops, stair collision, head-bump ceilings, step-up logic
 - Belt (hotbar): holds **any** item — drag from the backpack. The active item drives the action button by type: a **tool** gathers/attacks (you hit what you look at — aim-based, no chopping with your back; matching tool fast, bare fists slower), **food** is eaten, anything else is just held. Backpack items and belt items both count toward recipes.
-- Mobs respect the world: building walls block them, and they can't hit you from far below (build up to stay safe).
+- Mobs respect the world: walls and solid foundations block them (and you); a **closed door blocks, an open door lets them in**; they slide along walls toward openings (lightweight steering, no full A*); they can't hit you from far below (build up to stay safe).
+- Interact button: look at a door and a separate button (F on desktop) opens/closes it. Foundations extend deep underground so they meet sloping terrain instead of floating.
 - Controls:
   - **Mobile:** left joystick, right side swipe = camera, big action button (tool/fist) bottom-right, JUMP above it, belt across the bottom (tap to select), 🎒/🔨 top-left
   - **Desktop:** WASD + mouse (pointer lock), Space jump, E hit, C craft panel, I inventory, V camera toggle, 1–4 belt select (or recipe 1–8 while the craft panel is open), click/Enter to place, Esc cancel
