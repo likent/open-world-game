@@ -30,7 +30,7 @@ function itemUses(id) {
 }
 
 // Загружаем таблицу предметов из JSON и строим карту id → запись
-fetch('data/items.json?v=10')
+fetch('data/items.json?v=11')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => {
     const map = {};

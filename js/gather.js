@@ -5,6 +5,7 @@ const AIM_DOT = 0.5;      // cos(~60°): цель должна быть пере
 const RESPAWN_MS = 40000;
 let target = null;
 const actionBtn = document.getElementById('actionBtn');
+const interactBtn = document.getElementById('interactBtn');
 const hint = document.getElementById('hint');
 
 // Цель — то, на что смотрит игрок (ближайшее к центру взгляда, в пределах досягаемости).
@@ -82,6 +83,32 @@ function hitTarget() {
     rocksMesh.instanceMatrix.needsUpdate = true;
   }
   // addItem уже вызвал updateInv()
+}
+
+// ============ ВЗАИМОДЕЙСТВИЕ (двери и т.п.) ============
+// объект перед игроком, с которым можно взаимодействовать (пока — двери)
+function interactTarget() {
+  if (typeof buildings === 'undefined') return null;
+  const hx = Math.sin(player.heading), hz = Math.cos(player.heading);
+  let best = null, bestScore = 0.25; // конус пошире, чем у удара
+  for (const b of buildings) {
+    if (b.type !== 'door') continue;
+    const dx = b.x - player.pos.x, dz = b.z - player.pos.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 3.2 || dist < 0.0001) continue;
+    if (Math.abs(b.baseY - player.pos.y) > 2.5) continue;
+    const dot = (dx * hx + dz * hz) / dist;
+    if (dot > bestScore) { bestScore = dot; best = b; }
+  }
+  return best;
+}
+function toggleDoor(b) {
+  const ud = b.mesh.userData;
+  ud.doorTarget = ud.doorTarget > 0.5 ? 0 : 1;
+}
+function doInteract() {
+  const b = interactTarget();
+  if (b && b.type === 'door') toggleDoor(b);
 }
 
 function processRespawns(now) {

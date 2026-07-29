@@ -22,6 +22,7 @@ const HOTKEYS = ['foundation','floor','stairs','woodwall','stonewall','window','
 
 const WOOD_M = () => new THREE.MeshLambertMaterial({ color: 0x8a6238 });
 
+const FOUND_SKIRT = 3.0; // насколько фундамент уходит вниз (дотянуться до земли на склоне)
 function buildFoundation() {
   const g = new THREE.Group();
   const slab = new THREE.Mesh(
@@ -30,6 +31,13 @@ function buildFoundation() {
   );
   slab.position.y = FOUND_H / 2;
   g.add(slab);
+  // «юбка» вниз — чтобы висящий на склоне фундамент дотягивался до земли и слегка пронзал terrain
+  const skirt = new THREE.Mesh(
+    new THREE.BoxGeometry(CELL * 0.94, FOUND_SKIRT, CELL * 0.94),
+    new THREE.MeshLambertMaterial({ color: 0x877f76, flatShading: true })
+  );
+  skirt.position.y = -FOUND_SKIRT / 2 + 0.02;
+  g.add(skirt);
   const trim = new THREE.Mesh(
     new THREE.BoxGeometry(CELL + 0.08, 0.1, CELL + 0.08),
     new THREE.MeshLambertMaterial({ color: 0x7b6a52 })
@@ -199,7 +207,8 @@ function buildDoorWall() {
   pivot.add(knob);
   g.add(pivot);
   g.userData.doorPivot = pivot;
-  g.userData.doorOpen = 0;
+  g.userData.doorOpen = 0;    // фактическое положение створки (анимируется)
+  g.userData.doorTarget = 0;  // куда стремится: 0 закрыта, 1 открыта (по кнопке)
   return g;
 }
 const BUILDERS = {
@@ -221,6 +230,12 @@ const WALL_SEGS = {
 };
 // радиус выталкивания: у двери меньше, чтобы игрок пролезал в проём
 const WALL_PUSH = { woodwall: 0.6, stonewall: 0.6, window: 0.6, door: 0.4 };
+const DOOR_CLOSED = [[-CELL/2, CELL/2]]; // закрытая дверь — сплошная стена
+// сегменты коллизии с учётом состояния двери (закрытая держит, открытая — проём)
+function wallSegsFor(b) {
+  if (b.type === 'door') return (b.mesh.userData.doorOpen > 0.5) ? WALL_SEGS.door : DOOR_CLOSED;
+  return WALL_SEGS[b.type];
+}
 
 function canAfford(cost) {
   for (const k in cost) if (countItem(k) < cost[k]) return false;

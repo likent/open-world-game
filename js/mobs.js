@@ -3,7 +3,7 @@
 // охотятся на игрока (активны ночью). Дроп мяса/костей — через addItem по id.
 let MOBS = {};            // id → определение
 let MOB_DEFS = [];        // список определений
-fetch('data/mobs.json?v=10')
+fetch('data/mobs.json?v=11')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => { MOB_DEFS = db.mobs; for (const m of MOB_DEFS) MOBS[m.id] = m; })
   .catch(err => console.warn('mobs.json не загружен:', err));
@@ -92,17 +92,30 @@ function damageMob(m, dmg) {
   return false;
 }
 
-// стены построек не пускают мобов (жилище реально защищает)
+// постройки не пускают мобов (стены, закрытая дверь, фундамент). Возвращает true, если упёрся.
 function collideMobWalls(m) {
-  if (typeof buildings === 'undefined') return;
+  if (typeof buildings === 'undefined') return false;
   const my = terrainHeight(m.x, m.z);
+  let pushed = false;
   for (const b of buildings) {
+    // фундамент — сплошной блок сбоку
+    if (b.type === 'foundation') {
+      const top = topOf(b), half = CELL / 2, r = 0.4;
+      if (my < top - 0.1 && Math.abs(m.x - b.x) < half + r && Math.abs(m.z - b.z) < half + r) {
+        const penX = (half + r) - Math.abs(m.x - b.x);
+        const penZ = (half + r) - Math.abs(m.z - b.z);
+        if (penX < penZ) m.x = b.x + Math.sign((m.x - b.x) || 1) * (half + r);
+        else             m.z = b.z + Math.sign((m.z - b.z) || 1) * (half + r);
+        pushed = true;
+      }
+      continue;
+    }
     if (!isWallType(b.type)) continue;
     if (my >= b.baseY + WALL_H - 0.1 || my < b.baseY - 1.0) continue; // не на уровне стены
     const dirX = Math.cos(b.rotY), dirZ = -Math.sin(b.rotY);
     const relX = m.x - b.x, relZ = m.z - b.z;
     const proj = relX * dirX + relZ * dirZ;
-    for (const [a, bb] of WALL_SEGS[b.type]) {
+    for (const [a, bb] of wallSegsFor(b)) { // закрытая дверь — сплошная, открытая — проём
       const tt = Math.max(a, Math.min(bb, proj));
       const cpX = b.x + dirX * tt, cpZ = b.z + dirZ * tt;
       const ddx = m.x - cpX, ddz = m.z - cpZ;
@@ -111,9 +124,11 @@ function collideMobWalls(m) {
       if (d2 < min * min && d2 > 1e-4) {
         const d = Math.sqrt(d2);
         m.x = cpX + ddx / d * min; m.z = cpZ + ddz / d * min;
+        pushed = true;
       }
     }
   }
+  return pushed;
 }
 
 function respawnPlayerDead() {
@@ -180,7 +195,8 @@ function updateMobs(dt) {
     } else {
       m.heading += 2.2; m.wander = 0.3;                 // упёрлись — развернуться
     }
-    collideMobWalls(m);                                 // стены не пускают
+    // постройки не пускают; если охотник упёрся — скользим вдоль (найдём проём/открытую дверь)
+    if (collideMobWalls(m) && def.hostile && m.flee <= 0) { m.heading += 0.7; m.wander = 0.25; }
 
     const gy = terrainHeight(m.x, m.z);
 
