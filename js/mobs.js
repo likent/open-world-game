@@ -3,7 +3,7 @@
 // охотятся на игрока (активны ночью). Дроп мяса/костей — через addItem по id.
 let MOBS = {};            // id → определение
 let MOB_DEFS = [];        // список определений
-fetch('data/mobs.json?v=11')
+fetch('data/mobs.json?v=12')
   .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
   .then(db => { MOB_DEFS = db.mobs; for (const m of MOB_DEFS) MOBS[m.id] = m; })
   .catch(err => console.warn('mobs.json не загружен:', err));
@@ -14,6 +14,8 @@ const AGGRO_R = 22;       // на какой дистанции враг зам�
 const MELEE_R = 2.4;      // радиус удара игрока по мобу
 const DESPAWN_R = 100;    // дальше этого мобы удаляются (переиспользуем)
 const PLAYER_DMG = 3;     // урон игрока за удар
+const CHASE_STUCK = 5;    // сек без приближения к игроку → моб сдаётся (не смог подобраться)
+const GIVEUP_TIME = 8;    // сек бродит, игнорируя агр, после того как сдался
 
 const mobs = [];          // активные: { def, mesh, x, z, heading, wander, flee, atkCd, hp }
 let spawnTimer = 0;
@@ -71,7 +73,8 @@ function spawnMob(def) {
     if (terrainHeight(x, z) < WATER_Y + 0.6) continue; // не в воде
     const mesh = buildMobMesh(def);
     scene.add(mesh);
-    mobs.push({ def, mesh, x, z, heading: a, wander: 0, flee: 0, atkCd: 0, hp: def.hp, phase: 0 });
+    mobs.push({ def, mesh, x, z, heading: a, wander: 0, flee: 0, atkCd: 0, hp: def.hp, phase: 0,
+                bestDist: Infinity, stuckT: 0, giveUp: 0 });
     return;
   }
 }
@@ -176,9 +179,13 @@ function updateMobs(dt) {
     let tx, tz, spd = def.speed;
     if (m.flee > 0) {                                   // убегает от игрока
       m.flee -= dt; tx = -dx; tz = -dz; spd *= 1.15;
-    } else if (def.hostile && distP < AGGRO_R) {        // враг охотится
+    } else if (def.hostile && distP < AGGRO_R && m.giveUp <= 0) { // враг охотится
       tx = dx; tz = dz;
-    } else {                                            // блуждание
+      // приближается? если давно не может подобраться — сдаётся и уходит бродить
+      if (distP < m.bestDist - 0.25) { m.bestDist = distP; m.stuckT = 0; }
+      else { m.stuckT += dt; if (m.stuckT > CHASE_STUCK) { m.giveUp = GIVEUP_TIME; m.stuckT = 0; m.bestDist = Infinity; } }
+    } else {                                            // блуждание (в т.ч. пока сдался)
+      if (m.giveUp > 0) m.giveUp -= dt; else m.bestDist = Infinity;
       m.wander -= dt;
       if (m.wander <= 0) { m.heading += (Math.random() - 0.5) * 2.5; m.wander = 1.5 + Math.random() * 2; }
       tx = Math.sin(m.heading); tz = Math.cos(m.heading); spd *= 0.5;
@@ -205,7 +212,7 @@ function updateMobs(dt) {
     if (def.hostile && def.damage > 0 && distP < 1.7 &&
         Math.abs(player.pos.y - gy) < 2.6 && m.atkCd <= 0) {
       player.hp = Math.max(0, player.hp - def.damage);
-      m.atkCd = 1.0; lastHitAt = now;
+      m.atkCd = 1.0; lastHitAt = now; m.stuckT = 0; // достаёт игрока — не застрял
       if (player.hp <= 0) respawnPlayerDead();
     }
 
